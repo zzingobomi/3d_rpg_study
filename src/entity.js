@@ -1,5 +1,8 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.118/build/three.module.js";
 
+// InitEntity 부분을 억지로 짜맞춘거 같은데 리팩토링이 필요할듯.. Entity와 component 관계 정리
+// Entity는 하나의 오브젝트이고 Component 는 이 Ebtity 의 자식으로 list 로 들어가는 구조인거 같은데
+// Unity 처럼
 export const entity = (() => {
   class Entity {
     _name;
@@ -50,6 +53,12 @@ export const entity = (() => {
       c.InitComponent();
     }
 
+    InitEntity() {
+      for (let k in this._components) {
+        this._components[k].InitEntity();
+      }
+    }
+
     GetComponent(n) {
       return this._components[n];
     }
@@ -98,11 +107,15 @@ export const entity = (() => {
       this._parent = null;
     }
 
+    Destroy() {}
+
     SetParent(p) {
       this._parent = p;
     }
 
     InitComponent() {}
+
+    InitEntity() {}
 
     GetComponent(n) {
       return this._parent.GetComponent(n);
