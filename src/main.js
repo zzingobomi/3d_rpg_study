@@ -35,7 +35,7 @@ void main() {
 
 let _APP = null;
 
-class HackNSlashDemo {
+class CrappyMMOAttempt {
   _threejs;
   _camera;
   _scene;
@@ -52,6 +52,24 @@ class HackNSlashDemo {
   }
 
   _Initailize() {
+    this._entityManager = new entity_manager.EntityManager();
+
+    document.getElementById("login-ui").style.visibility = "visible";
+    document.getElementById("login-button").onclick = () => {
+      this.OnGameStarted_();
+    };
+  }
+
+  FadeoutLogin() {
+    const loginElement = document.getElementById("login-ui");
+    if (loginElement.classList.contains("fadeOut")) {
+      return;
+    }
+
+    loginElement.classList.toggle("fadeOut");
+  }
+
+  OnGameStarted_() {
     // wdbgl
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
@@ -117,7 +135,6 @@ class HackNSlashDemo {
     plane.rotation.x = -Math.PI / 2;
     this._scene.add(plane);
 
-    this._entityManager = new entity_manager.EntityManager();
     this._grid = new spatial_hash_grid.SpatialHashGrid(
       [
         [-1000, -1000],
@@ -132,6 +149,8 @@ class HackNSlashDemo {
 
     this._previousRAF = null;
     this._RAF();
+
+    this.FadeoutLogin();
   }
 
   _LoadFoliage() {
@@ -267,5 +286,5 @@ class HackNSlashDemo {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  _APP = new HackNSlashDemo();
+  _APP = new CrappyMMOAttempt();
 });
