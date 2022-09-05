@@ -111,6 +111,15 @@ export const player_entity = (() => {
         this._mixer.update(timeInSeconds);
       }
 
+      const currentState = this._stateMachine._currentState;
+      if (
+        currentState.Name != "walk" &&
+        currentState.Name != "run" &&
+        currentState.Name != "idle"
+      ) {
+        return;
+      }
+
       const velocity = this._velocity;
       const frameDecceleration = new THREE.Vector3(
         velocity.x * this._decceleration.x,
