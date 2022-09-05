@@ -1,8 +1,12 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.118.1/build/three.module.js";
+import { entity_manager } from "./entity-manager.js";
 
 import { entity } from "./entity.js";
+import { math } from "./math.js";
+import { object3d_component } from "./object3d-component.js";
 import { player_entity } from "./player-entity.js";
 import { player_input } from "./player-input.js";
+import { third_person_camera } from "./third-person-camera.js";
 
 const _VS = `
 varying vec3 vWorldPosition;
@@ -34,6 +38,10 @@ class HackNSlashDemo {
   _camera;
   _scene;
   _sun;
+
+  _entityManager;
+
+  _previousRAF;
 
   constructor() {
     this._Initailize();
@@ -105,10 +113,53 @@ class HackNSlashDemo {
     plane.rotation.x = -Math.PI / 2;
     this._scene.add(plane);
 
+    this._entityManager = new entity_manager.EntityManager();
+
     this._LoadPlayer();
+    this._LoadFoliage();
     this._LoadSky();
 
+    this._previousRAF = null;
     this._RAF();
+  }
+
+  _LoadFoliage() {
+    for (let i = 0; i < 100; ++i) {
+      const names = [
+        "CommonTree_Dead",
+        "CommonTree",
+        "BirchTree",
+        "BirchTree_Dead",
+        "Willow",
+        "Willow_Dead",
+        "PineTree",
+      ];
+      const name = names[math.rand_int(0, names.length - 1)];
+      const index = math.rand_int(1, 5);
+
+      const pos = new THREE.Vector3(
+        (Math.random() * 2.0 - 1.0) * 500,
+        0,
+        (Math.random() * 2.0 - 1.0) * 500
+      );
+
+      const e = new entity.Entity();
+      e.AddComponent(
+        new object3d_component.StaticModelComponent({
+          scene: this._scene,
+          resourcePath: "./resources/nature/FBX/",
+          resourceName: name + "_" + index + ".fbx",
+          scale: 0.25,
+          emissive: new THREE.Color(0x000000),
+          specular: new THREE.Color(0x000000),
+          receiveShadow: true,
+          castShadow: true,
+        })
+      );
+      e.SetPosition(pos);
+      this._entityManager.Add(e);
+      e.SetActive(false);
+    }
   }
 
   _LoadPlayer() {
@@ -120,6 +171,16 @@ class HackNSlashDemo {
     const player = new entity.Entity();
     player.AddComponent(new player_input.BasicCharacterControllerInput(params));
     player.AddComponent(new player_entity.BasicCharacterController(params));
+    this._entityManager.Add(player, "player");
+
+    const camera = new entity.Entity();
+    camera.AddComponent(
+      new third_person_camera.ThirdPersonCamera({
+        camera: this._camera,
+        target: this._entityManager.Get("player"),
+      })
+    );
+    this._entityManager.Add(camera, "player-camera");
   }
 
   // TODO: 분석 필요
@@ -159,9 +220,20 @@ class HackNSlashDemo {
 
   _RAF() {
     requestAnimationFrame((t) => {
+      if (this._previousRAF === null) {
+        this._previousRAF = t;
+      }
+
       this._RAF();
       this._threejs.render(this._scene, this._camera);
+      this._Step(t - this._previousRAF);
+      this._previousRAF = t;
     });
+  }
+
+  _Step(timeElapsed) {
+    const timeElapsedS = Math.min(1.0 / 30.0, timeElapsed * 0.001);
+    this._entityManager.Update(timeElapsedS);
   }
 }
 
