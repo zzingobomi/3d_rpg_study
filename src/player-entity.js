@@ -103,6 +103,8 @@ export const player_entity = (() => {
       });
     }
 
+    _FindIntersections(pos) {}
+
     Update(timeInSeconds) {
       const input = this.GetComponent("BasicCharacterControllerInput");
       this._stateMachine.Update(timeInSeconds, input);

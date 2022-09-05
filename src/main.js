@@ -6,6 +6,7 @@ import { math } from "./math.js";
 import { object3d_component } from "./object3d-component.js";
 import { player_entity } from "./player-entity.js";
 import { player_input } from "./player-input.js";
+import { spatial_hash_grid } from "./spatial-hash-grid.js";
 import { third_person_camera } from "./third-person-camera.js";
 
 const _VS = `
@@ -40,6 +41,8 @@ class HackNSlashDemo {
   _sun;
 
   _entityManager;
+
+  _grid;
 
   _previousRAF;
 
@@ -114,6 +117,13 @@ class HackNSlashDemo {
     this._scene.add(plane);
 
     this._entityManager = new entity_manager.EntityManager();
+    this._grid = new spatial_hash_grid.SpatialHashGrid(
+      [
+        [-1000, -1000],
+        [1000, 1000],
+      ],
+      [100, 100]
+    );
 
     this._LoadPlayer();
     this._LoadFoliage();
