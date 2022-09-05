@@ -6,6 +6,7 @@ import { math } from "./math.js";
 import { object3d_component } from "./object3d-component.js";
 import { player_entity } from "./player-entity.js";
 import { player_input } from "./player-input.js";
+import { spatial_grid_controller } from "./spatial-grid-controller.js";
 import { spatial_hash_grid } from "./spatial-hash-grid.js";
 import { third_person_camera } from "./third-person-camera.js";
 
@@ -166,6 +167,9 @@ class HackNSlashDemo {
           castShadow: true,
         })
       );
+      e.AddComponent(
+        new spatial_grid_controller.SpatialGridController({ grid: this._grid })
+      );
       e.SetPosition(pos);
       this._entityManager.Add(e);
       e.SetActive(false);
@@ -181,6 +185,9 @@ class HackNSlashDemo {
     const player = new entity.Entity();
     player.AddComponent(new player_input.BasicCharacterControllerInput(params));
     player.AddComponent(new player_entity.BasicCharacterController(params));
+    player.AddComponent(
+      new spatial_grid_controller.SpatialGridController({ grid: this._grid })
+    );
     this._entityManager.Add(player, "player");
 
     const camera = new entity.Entity();

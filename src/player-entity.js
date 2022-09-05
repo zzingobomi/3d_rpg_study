@@ -103,7 +103,27 @@ export const player_entity = (() => {
       });
     }
 
-    _FindIntersections(pos) {}
+    // spatial-hash-grid 를 이용하여 근처 cell 에 있는 entity를 구하고 그 entity 들만 거리를 구한다.
+    // 자세한 로직은 tutorial을 분석해보자
+    // 여기에 https://www.youtube.com/watch?v=aC7KF90Mots (Octree) 를 이용할 순 없을까?
+    _FindIntersections(pos) {
+      const grid = this.GetComponent("SpatialGridController");
+      //const nearby = grid.FindNearbyEntities(5).filter(e => _IsAlive(e));
+      const nearby = grid.FindNearbyEntities(5);
+      const collisions = [];
+
+      for (let i = 0; i < nearby.length; ++i) {
+        const e = nearby[i].entity;
+        const d =
+          ((pos.x - e._position.x) ** 2 + (pos.z - e._position.z) ** 2) ** 0.5;
+
+        // HARDCODED
+        if (d <= 4) {
+          collisions.push(nearby[i].entity);
+        }
+      }
+      return collisions;
+    }
 
     Update(timeInSeconds) {
       const input = this.GetComponent("BasicCharacterControllerInput");
@@ -187,6 +207,12 @@ export const player_entity = (() => {
       const pos = controlObject.position.clone();
       pos.add(forward);
       pos.add(sideways);
+
+      // spatial-hash-grid 참고 (object3D 가 있다면 움직이지 않는다)
+      const collisions = this._FindIntersections(pos);
+      if (collisions.length > 0) {
+        return;
+      }
 
       controlObject.position.copy(pos);
       this._position.copy(pos);
