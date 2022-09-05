@@ -3,8 +3,26 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.118.1/build/three.m
 import { FBXLoader } from "https://cdn.jsdelivr.net/npm/three@0.118.1/examples/jsm/loaders/FBXLoader.js";
 
 import { entity } from "./entity.js";
+import { finite_state_machine } from "./finite-state-machine.js";
+import { player_state } from "./player-state.js";
 
 export const player_entity = (() => {
+  class CharacterFSM extends finite_state_machine.FiniteStateMachine {
+    _animations;
+
+    constructor(animations) {
+      super();
+      this._animations = animations;
+      this._Init();
+    }
+
+    _Init() {
+      this._AddState("idle", player_state.IdleState);
+      this._AddState("walk", player_state.WalkState);
+      this._AddState("run", player_state.RunState);
+    }
+  }
+
   class BasicCharacterController extends entity.Component {
     _target;
     _params;
@@ -14,6 +32,11 @@ export const player_entity = (() => {
     _position;
 
     _animations;
+    _mixer;
+
+    _stateMachine;
+
+    _loadingManager;
 
     constructor(params) {
       super();
@@ -28,6 +51,7 @@ export const player_entity = (() => {
       this._position = new THREE.Vector3();
 
       this._animations = {};
+      this._stateMachine = new CharacterFSM(this._animations);
 
       this._LoadModels();
     }
@@ -39,11 +63,53 @@ export const player_entity = (() => {
         this._target = fbx;
         this._target.scale.setScalar(0.035);
         this._params.scene.add(this._target);
+
+        this._target.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
+          if (c.material && c.material.map) {
+            c.material.map.encoding = THREE.sRGBEncoding;
+          }
+        });
+
+        this._mixer = new THREE.AnimationMixer(this._target);
+
+        const _OnLoad = (animName, anim) => {
+          const clip = anim.animations[0];
+          const action = this._mixer.clipAction(clip);
+
+          this._animations[animName] = {
+            clip: clip,
+            action: action,
+          };
+        };
+
+        this._manager = new THREE.LoadingManager();
+        this._manager.onLoad = () => {
+          this._stateMachine.SetState("idle");
+        };
+
+        const loader = new FBXLoader(this._manager);
+        loader.setPath("./resources/guard/");
+        loader.load("Sword And Shield Idle.fbx", (a) => {
+          _OnLoad("idle", a);
+        });
+        loader.load("Sword And Shield Run.fbx", (a) => {
+          _OnLoad("run", a);
+        });
+        loader.load("Sword And Shield Walk.fbx", (a) => {
+          _OnLoad("walk", a);
+        });
       });
     }
 
     Update(timeInSeconds) {
       const input = this.GetComponent("BasicCharacterControllerInput");
+      this._stateMachine.Update(timeInSeconds, input);
+
+      if (this._mixer) {
+        this._mixer.update(timeInSeconds);
+      }
 
       const velocity = this._velocity;
       const frameDecceleration = new THREE.Vector3(

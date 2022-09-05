@@ -218,6 +218,17 @@ class HackNSlashDemo {
     this._threejs.setSize(window.innerWidth, window.innerHeight);
   }
 
+  _UpdateSun() {
+    const player = this._entityManager.Get("player");
+    const pos = player._position;
+
+    this._sun.position.copy(pos);
+    this._sun.position.add(new THREE.Vector3(-10, 500, -10));
+    this._sun.target.position.copy(pos);
+    this._sun.updateMatrixWorld();
+    this._sun.target.updateMatrixWorld();
+  }
+
   _RAF() {
     requestAnimationFrame((t) => {
       if (this._previousRAF === null) {
@@ -233,6 +244,7 @@ class HackNSlashDemo {
 
   _Step(timeElapsed) {
     const timeElapsedS = Math.min(1.0 / 30.0, timeElapsed * 0.001);
+    this._UpdateSun();
     this._entityManager.Update(timeElapsedS);
   }
 }
