@@ -2,6 +2,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.118.1/build/three.m
 import { entity_manager } from "./entity-manager.js";
 
 import { entity } from "./entity.js";
+import { load_controller } from "./load-controller.js";
 import { math } from "./math.js";
 import { network_controller } from "./network-controller.js";
 import { object3d_component } from "./object3d-component.js";
@@ -9,6 +10,7 @@ import { player_entity } from "./player-entity.js";
 import { player_input } from "./player-input.js";
 import { spatial_grid_controller } from "./spatial-grid-controller.js";
 import { spatial_hash_grid } from "./spatial-hash-grid.js";
+import { spawners } from "./spqwners.js";
 import { third_person_camera } from "./third-person-camera.js";
 import { threejs_component } from "./threejs-component.js";
 import { ui_controller } from "./ui-controller.js";
@@ -49,8 +51,6 @@ class CrappyMMOAttempt {
 
     this._previousRAF = null;
     this._RAF();
-
-    this._entityManager.Get("ui").GetComponent("UIController").FadeoutLogin();
   }
 
   _LoadControllers() {
@@ -70,6 +70,27 @@ class CrappyMMOAttempt {
     const ui = new entity.Entity();
     ui.AddComponent(new ui_controller.UIController());
     this._entityManager.Add(ui, "ui");
+
+    const l = new entity.Entity();
+    l.AddComponent(new load_controller.LoadController());
+    this._entityManager.Add(l, "loader");
+
+    const spawner = new entity.Entity();
+    spawner.AddComponent(
+      new spawners.PlayerSpawner({
+        grid: this._grid,
+        scene: this._scene,
+        camera: this._camera,
+      })
+    );
+    spawner.AddComponent(
+      new spawners.NetworkEntitySpawner({
+        grid: this._grid,
+        scene: this._scene,
+        camera: this._camera,
+      })
+    );
+    this._entityManager.Add(spawner, "spawners");
   }
 
   _LoadFoliage() {
@@ -126,6 +147,7 @@ class CrappyMMOAttempt {
     }
   }
 
+  /*
   _LoadPlayer() {
     const params = {
       camera: this._camera,
@@ -149,6 +171,7 @@ class CrappyMMOAttempt {
     );
     this._entityManager.Add(camera, "player-camera");
   }
+  */
 
   _OnWindowResize() {
     this._camera.aspect = window.innerWidth / window.innerHeight;

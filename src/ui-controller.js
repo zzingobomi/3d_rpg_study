@@ -42,6 +42,21 @@ export const ui_controller = (() => {
       }
       evt.stopPropagation();
     }
+
+    AddChatMessage(msg) {
+      const e = document.createElement("div");
+      e.className = "chat-text";
+      if (msg.server) {
+        e.className += " chat-text-server";
+      } else if (msg.action) {
+        e.className += " chat-text-action";
+      } else {
+        e.innerText = "[" + msg.name + "]: ";
+      }
+      e.innerText += msg.text;
+      const chatElement = document.getElementById("chat-ui-text-area");
+      chatElement.insertBefore(e, document.getElementById("chat-input"));
+    }
   }
 
   return {

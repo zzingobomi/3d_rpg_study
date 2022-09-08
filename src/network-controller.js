@@ -42,7 +42,19 @@ export const network_controller = (() => {
       this._socket.emit("chat.msg", txt);
     }
 
-    _OnMessage(e, d) {}
+    _OnMessage(e, d) {
+      if (e == "world.player") {
+        const spawner =
+          this.FindEntity("spawners").GetComponent("PlayerSpawner");
+
+        const player = spawner.Spawn(d.desc);
+
+        console.log("entering world: " + d.id);
+        this._playerID = d.id;
+      } else if (e == "chat.message") {
+        this.FindEntity("ui").GetComponent("UIController").AddChatMessage(d);
+      }
+    }
   }
 
   return {

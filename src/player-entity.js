@@ -5,6 +5,7 @@ import { FBXLoader } from "https://cdn.jsdelivr.net/npm/three@0.118.1/examples/j
 import { entity } from "./entity.js";
 import { finite_state_machine } from "./finite-state-machine.js";
 import { player_state } from "./player-state.js";
+import { defs } from "./defs.js";
 
 export const player_entity = (() => {
   class CharacterFSM extends finite_state_machine.FiniteStateMachine {
@@ -25,6 +26,8 @@ export const player_entity = (() => {
 
   class BasicCharacterController extends entity.Component {
     _target;
+    _group;
+    _bones;
     _params;
     _decceleration;
     _acceleration;
@@ -40,23 +43,96 @@ export const player_entity = (() => {
 
     constructor(params) {
       super();
-      this._Init(params);
+      this._params = params;
     }
 
-    _Init(params) {
-      this._params = params;
+    InitEntity() {
+      console.log("initEntity");
+      this._Init();
+    }
+
+    _Init() {
       this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
       this._acceleration = new THREE.Vector3(1, 0.125, 50.0);
       this._velocity = new THREE.Vector3(0, 0, 0);
       this._position = new THREE.Vector3();
+      this._group = new THREE.Group();
+
+      this._params.scene.add(this._group);
 
       this._animations = {};
-      this._stateMachine = new CharacterFSM(this._animations);
 
       this._LoadModels();
     }
 
     _LoadModels() {
+      const classType = this._params.desc.character.class;
+      const modelData = defs.CHARACTER_MODELS[classType];
+
+      const loader = this.FindEntity("loader").GetComponent("LoadController");
+      loader.LoadSkinnedGLB(modelData.path, modelData.base, (glb) => {
+        this._target = glb.scene;
+        this._target.scale.setScalar(modelData.scale);
+        this._target.visible = false;
+
+        this._group.add(this._target);
+
+        this._bones = {};
+        this._target.traverse((c) => {
+          if (!c.skeleton) {
+            return;
+          }
+          for (let b of c.skeleton.bones) {
+            this._bones[b.name] = b;
+          }
+        });
+
+        this._target.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
+          if (c.material && c.material.map) {
+            c.material.map.encoding = THREE.sRGBEncoding;
+          }
+        });
+
+        this._mixer = new THREE.AnimationMixer(this._target);
+
+        const _FindAnim = (animName) => {
+          for (let i = 0; i < glb.animations.length; i++) {
+            if (glb.animations[i].name.includes(animName)) {
+              const clip = glb.animations[i];
+              const action = this._mixer.clipAction(clip);
+              return {
+                clip: clip,
+                action: action,
+              };
+            }
+          }
+          return null;
+        };
+
+        this._animations["idle"] = _FindAnim("Idle");
+        this._animations["walk"] = _FindAnim("Walk");
+        this._animations["run"] = _FindAnim("Run");
+        this._animations["death"] = _FindAnim("Death");
+        this._animations["attack"] = _FindAnim("Attack");
+        this._animations["dance"] = _FindAnim("Dance");
+
+        this._target.visible = true;
+
+        this._stateMachine = new CharacterFSM(this._animations);
+        this._stateMachine.SetState("idle");
+
+        this.Broadcast({
+          topic: "load.character",
+          model: this._target,
+          bones: this._bones,
+        });
+
+        this.FindEntity("ui").GetComponent("UIController").FadeoutLogin();
+      });
+
+      /* Only Client..
       const loader = new FBXLoader();
       loader.setPath("./resources/guard/");
       loader.load("castle_guard_01.fbx", (fbx) => {
@@ -101,6 +177,7 @@ export const player_entity = (() => {
           _OnLoad("walk", a);
         });
       });
+      */
     }
 
     // spatial-hash-grid 를 이용하여 근처 cell 에 있는 entity를 구하고 그 entity 들만 거리를 구한다.
@@ -126,6 +203,10 @@ export const player_entity = (() => {
     }
 
     Update(timeInSeconds) {
+      if (!this._stateMachine) {
+        return;
+      }
+
       const input = this.GetComponent("BasicCharacterControllerInput");
       this._stateMachine.Update(timeInSeconds, input);
 

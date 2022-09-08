@@ -42,6 +42,10 @@ export const entity = (() => {
       return this._name;
     }
 
+    get Manager() {
+      return this._parent;
+    }
+
     SetActive(b) {
       this._parent.SetActive(this, b);
     }
@@ -119,6 +123,10 @@ export const entity = (() => {
 
     GetComponent(n) {
       return this._parent.GetComponent(n);
+    }
+
+    get Manager() {
+      return this._parent.Manager;
     }
 
     FindEntity(n) {
